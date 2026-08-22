@@ -503,8 +503,7 @@ const keys = [
             }
             throw new Error("API Connection Error");
         }
-
- async function processWord() {
+async function processWord() {
             let newWord = document.getElementById("wordInput").value.trim().toLowerCase();
             if(newWord === "") { alert("الرجاء إدخال كلمة!"); return; }
             let resultDiv = document.getElementById("resultArea");
@@ -515,7 +514,6 @@ const keys = [
 
             let previousWordsList = savedData.map(item => item.word).slice(-4).join(" ، "); 
             
-            // بسطنا الأمر لأقصى درجة عشان ما يفكر! طلبنا منه نصوص صافية فقط.
             let prompt = `ترجم "${newWord}" للإنجليزية، وضعها في جملة قصيرة جداً (A2).
 حاول استخدام إحدى هذه الكلمات إن أمكن: [${previousWordsList}].
 {
@@ -531,7 +529,6 @@ const keys = [
                 
                 let finalSentence = aiData.sentence;
                 
-                // هنا الجافاسكريبت بتتكفل بالتظليل بلمح البصر بدل الذكاء الاصطناعي
                 try {
                     let regexNew = new RegExp(`\\b${aiData.word}\\b`, 'gi');
                     finalSentence = finalSentence.replace(regexNew, "<mark class='new-word'>$&</mark>");
@@ -545,12 +542,19 @@ const keys = [
                     });
                 } catch(e) { console.log("تخطي خطأ التظليل"); }
                 
+                // هنا ضفنا أزرار الصوت 🔊 جنب الكلمة وجنب الجملة
                 resultDiv.innerHTML = `
-                    <p><strong>الكلمة:</strong> ${aiData.word}</p>
+                    <p>
+                        <strong>الكلمة:</strong> ${aiData.word}
+                        <button onclick="speakText('${aiData.word.replace(/'/g, "\\'")}')" style="background:none; border:none; cursor:pointer; font-size:24px; vertical-align:middle; transition:0.2s;">🔊</button>
+                    </p>
                     <p><strong>الترجمة:</strong> ${aiData.translation}</p>
                     <hr style="border: 0; border-top: 1px solid #e8eaed; margin: 15px 0;">
                     <p style="color: #5f6368; font-size: 16px;">الجملة التراكمية:</p>
-                    <p class="english-sentence">${finalSentence}</p>
+                    <p class="english-sentence">
+                        ${finalSentence}
+                        <button onclick="speakText('${aiData.sentence.replace(/'/g, "\\'")}')" style="background:none; border:none; cursor:pointer; font-size:24px; vertical-align:middle; transition:0.2s;">🔊</button>
+                    </p>
                     <p style="color: #5f6368; font-size: 18px; font-weight: 700; margin-top: 10px; text-align: right; direction: rtl;">${aiData.sentenceAr}</p>
                 `;
                 
@@ -565,6 +569,8 @@ const keys = [
             }
             btn.disabled = false; document.getElementById("wordInput").value = ""; 
         }
+
+
         async function sendMessage() {
             let chatInput = document.getElementById("chatInput"); let message = chatInput.value.trim(); if(message === "") return;
             let chatBox = document.getElementById("chatBox"); let btn = document.getElementById("chatBtn");
