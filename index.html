@@ -433,6 +433,39 @@
             throw new Error("API Connection Error");
         }
 
+       async function fetchAIResponse(promptText) {
+            let attempt = 0;
+            while (attempt < keys.length) {
+                const API_KEY = keys[currentKeyIndex];
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${API_KEY}`;
+                
+                try {
+                    const response = await fetch(url, { 
+                        method: "POST", 
+                        headers: { "Content-Type": "application/json" }, 
+                        body: JSON.stringify({ 
+                            contents: [{ parts: [{ text: promptText }] }], 
+                            // هنا السحر: أجبرناه يرجع JSON سليم غصباً عنه بدون ما يقص الكلام
+                            generationConfig: { responseMimeType: "application/json", temperature: 0.2 } 
+                        }) 
+                    });
+                    
+                    if (!response.ok) {
+                        currentKeyIndex = (currentKeyIndex + 1) % keys.length;
+                        attempt++;
+                        continue;
+                    }
+                    
+                    const data = await response.json();
+                    return data.candidates[0].content.parts[0].text;
+                } catch (error) {
+                    currentKeyIndex = (currentKeyIndex + 1) % keys.length;
+                    attempt++;
+                }
+            }
+            throw new Error("API Connection Error");
+        }
+
         async function processWord() {
             let newWord = document.getElementById("wordInput").value.trim().toLowerCase();
             if(newWord === "") { alert("الرجاء إدخال كلمة!"); return; }
@@ -447,7 +480,7 @@
             let prompt = `ترجم الكلمة العربية "${newWord}" إلى الإنجليزية، ثم ضعها في جملة سياقية بسيطة بمستوى A2.
 الكلمات السابقة: [${previousWordsList}].
 ضع الكلمة الجديدة داخل وسم <mark class='new-word'> وإذا استخدمت كلمة سابقة ضعها داخل <mark class='old-word'>.
-أرجع النتيجة بصيغة JSON فقط وبدون أي نصوص إضافية، وهذا هو التنسيق المطلوب:
+أرجع النتيجة بهذا الهيكل:
 {
   "word": "الكلمة بالإنجليزية",
   "translation": "الترجمة بالعربية",
@@ -457,10 +490,7 @@
 
             try {
                 let aiRawText = await fetchAIResponse(prompt);
-                console.log("النص الخام من الذكاء الاصطناعي:", aiRawText);
-                
-                let jsonString = aiRawText.replace(/```json/g, '').replace(/```html/g, '').replace(/```/g, '').trim();
-                let aiData = JSON.parse(jsonString);
+                let aiData = JSON.parse(aiRawText);
                 
                 resultDiv.innerHTML = `
                     <p><strong>الكلمة:</strong> ${aiData.word}</p>
@@ -477,12 +507,12 @@
                     localStorage.setItem("savedVocabulary", JSON.stringify(savedData));
                 }
             } catch (error) { 
-                console.error("تفاصيل الخطأ الدقيقة:", error);
-                resultDiv.innerHTML = `<p style="color:#d93025; font-weight: bold;">❌ حدث خطأ! افتح شاشة الفحص لمعرفة السبب.</p>`; 
+                // رجعنا الرسالة الودية للناس، والخطأ رح ينطبع في الخلفية بس
+                console.error("الخطأ البرمجي:", error);
+                resultDiv.innerHTML = `<p style="color:#d93025; font-weight: bold;">❌ حدث خطأ! قد يكون الذكاء الاصطناعي مرتبكاً، جرب مرة أخرى.</p>`; 
             }
             btn.disabled = false; document.getElementById("wordInput").value = ""; 
         }
-
         async function sendMessage() {
             let chatInput = document.getElementById("chatInput"); let message = chatInput.value.trim(); if(message === "") return;
             let chatBox = document.getElementById("chatBox"); let btn = document.getElementById("chatBtn");
