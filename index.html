@@ -431,7 +431,7 @@ const response = await fetch(url, { method: "POST", headers: { "Content-Type": "
     }
     throw new Error("API Connection Error");
 }
-        async function processWord() {
+    async function processWord() {
             let newWord = document.getElementById("wordInput").value.trim().toLowerCase();
             if(newWord === "") { alert("الرجاء إدخال كلمة!"); return; }
             let resultDiv = document.getElementById("resultArea");
@@ -441,18 +441,16 @@ const response = await fetch(url, { method: "POST", headers: { "Content-Type": "
             btn.disabled = true;
 
             let previousWordsList = savedData.map(item => item.word).slice(-4).join(" ، "); 
-           let prompt = `ترجم الكلمة العربية "${newWord}" إلى الإنجليزية، ثم ضعها في جملة بسيطة بمستوى A2.
-المطلوب إرجاع النتيجة بصيغة JSON فقط لا غير، وبدون أي نصوص إضافية، وبدون استخدام علامات \`\`\`json أو markdown نهائياً.
-استخدم هذا الهيكل بالضبط:
+            let prompt = `المطلوب ترجمة الكلمة العربية "${newWord}" إلى الإنجليزية، ثم وضعها في جملة سياقية بسيطة بمستوى A2.
+الكلمات السابقة في الذاكرة (استخدم واحدة منها إن أمكن): [${previousWordsList}].
+أرجع النتيجة بصيغة JSON فقط لا غير، وبدون أي نصوص إضافية.
+تنسيق الـ JSON المطلوب:
 {
   "word": "الكلمة بالإنجليزية",
   "translation": "الترجمة بالعربية",
   "sentence": "الجملة الإنجليزية",
-  "html": "الجملة الإنجليزية مع وضع الكلمة المترجمة بين علامتي <b>"
+  "html": "<p><strong>الكلمة:</strong> الكلمة بالإنجليزية</p><p><strong>الترجمة:</strong> الترجمة بالعربية</p><hr style='border: 0; border-top: 1px solid #e8eaed; margin: 15px 0;'><p style='color: #5f6368; font-size: 16px;'>الجملة التراكمية:</p><p class='english-sentence'>الجملة الإنجليزية مع وضع الكلمة الجديدة داخل وسم <mark class='new-word'> والكلمة القديمة داخل <mark class='old-word'></p><p style='color: #5f6368; font-size: 18px; font-weight: 700; margin-top: 10px; text-align: right; direction: rtl;'>ترجمة الجملة الإنجليزية للعربية</p>"
 }`;
-            3. التمييز اللوني: داخل الجملة في كود الـ HTML، يجب وضع الكلمة الجديدة داخل وسم <mark class="new-word">الكلمة</mark> ، وأي كلمة قديمة استخدمتها ضعها داخل وسم <mark class="old-word">الكلمة</mark>.
-            تنسيق مفتاح الـ "html" المطلوب داخل الـ JSON:
-            <p><strong>الكلمة (بعد التصحيح):</strong> [الكلمة]</p><p><strong>الترجمة:</strong> [الترجمة]</p><hr style="border: 0; border-top: 1px solid #e8eaed; margin: 15px 0;"><p style="color: #5f6368; font-size: 16px;">مثال الجملة التراكمية:</p><p class="english-sentence">[الجملة الإنجليزية مع وسوم التظليل mark]</p><p style="color: #5f6368; font-size: 18px; font-weight: 700; margin-top: 10px; text-align: right; direction: rtl;">[ترجمة الجملة الإنجليزية إلى العربية]</p>`;
 
             try {
                 let aiRawText = await fetchAIResponse(prompt);
