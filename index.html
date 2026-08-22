@@ -414,8 +414,7 @@ let currentKeyIndex = 0;
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${API_KEY}`;
         
         try {
-            const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] }) });
-            
+const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }], generationConfig: { maxOutputTokens: 100, temperature: 0.2 } }) });            
             if (!response.ok) {
                 // إذا فشل المفتاح، انتقل للمفتاح اللي بعده
                 currentKeyIndex = (currentKeyIndex + 1) % keys.length;
@@ -442,12 +441,15 @@ let currentKeyIndex = 0;
             btn.disabled = true;
 
             let previousWordsList = savedData.map(item => item.word).slice(-4).join(" ، "); 
-            let prompt = `أنت معلم لغة إنجليزية ذكي. أدخل المستخدم الكلمة الجديدة: "${newWord}". الكلمات القديمة في ذاكرته هي: [${previousWordsList}].
-            المطلوب إرجاع كود JSON صالح (Valid JSON) فقط لا غير، بدون أي نصوص خارج الـ JSON. هيكل الـ JSON المطلوب هو:
-            {"word": "الكلمة الإنجليزية الصحيحة", "translation": "الترجمة العربية للكلمة", "sentence": "الجملة الإنجليزية التي ألفتها", "html": "كود الـ HTML المنسق לעرض النتيجة"}
-            شروط بناء الجملة والـ HTML:
-            1. جملة إنجليزية قصيرة، واقعية، ومنطقية. نوّع في المواضيع. يجب أن تستخدم قواعد بسيطة (A1/A2).
-            2. استخدم الكلمة الجديدة، واستخدم كلمة أو كلمتين من القديم إذا كان السياق منطقياً.
+            let prompt = `ترجم الكلمة العربية "${newWord}" إلى الإنجليزية، ثم ضعها في جملة بسيطة بمستوى A2.
+المطلوب إرجاع النتيجة بصيغة JSON فقط لا غير، وبدون أي مقدمات أو علامات تنسيق.
+استخدم هذا الهيكل بالضبط:
+{
+  "word": "الكلمة بالإنجليزية",
+  "translation": "الترجمة بالعربية",
+  "sentence": "الجملة الإنجليزية",
+  "html": "الجملة الإنجليزية مع وضع الكلمة المترجمة بين علامتي <b>"
+}`;
             3. التمييز اللوني: داخل الجملة في كود الـ HTML، يجب وضع الكلمة الجديدة داخل وسم <mark class="new-word">الكلمة</mark> ، وأي كلمة قديمة استخدمتها ضعها داخل وسم <mark class="old-word">الكلمة</mark>.
             تنسيق مفتاح الـ "html" المطلوب داخل الـ JSON:
             <p><strong>الكلمة (بعد التصحيح):</strong> [الكلمة]</p><p><strong>الترجمة:</strong> [الترجمة]</p><hr style="border: 0; border-top: 1px solid #e8eaed; margin: 15px 0;"><p style="color: #5f6368; font-size: 16px;">مثال الجملة التراكمية:</p><p class="english-sentence">[الجملة الإنجليزية مع وسوم التظليل mark]</p><p style="color: #5f6368; font-size: 18px; font-weight: 700; margin-top: 10px; text-align: right; direction: rtl;">[ترجمة الجملة الإنجليزية إلى العربية]</p>`;
