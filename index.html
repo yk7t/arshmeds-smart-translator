@@ -441,8 +441,8 @@ const response = await fetch(url, { method: "POST", headers: { "Content-Type": "
             btn.disabled = true;
 
             let previousWordsList = savedData.map(item => item.word).slice(-4).join(" ، "); 
-            let prompt = `ترجم الكلمة العربية "${newWord}" إلى الإنجليزية، ثم ضعها في جملة بسيطة بمستوى A2.
-المطلوب إرجاع النتيجة بصيغة JSON فقط لا غير، وبدون أي مقدمات أو علامات تنسيق.
+           let prompt = `ترجم الكلمة العربية "${newWord}" إلى الإنجليزية، ثم ضعها في جملة بسيطة بمستوى A2.
+المطلوب إرجاع النتيجة بصيغة JSON فقط لا غير، وبدون أي نصوص إضافية، وبدون استخدام علامات \`\`\`json أو markdown نهائياً.
 استخدم هذا الهيكل بالضبط:
 {
   "word": "الكلمة بالإنجليزية",
