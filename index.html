@@ -261,7 +261,7 @@
     </div>
 
     <script>
-const keys = [
+        const keys = [
             "AQ.Ab8RN6Kup1i0E3DHQwOgro" + "XeA4ZRckawem2-" + "qX1KKsxx7gI-zQ"
         ];
         let currentKeyIndex = 0;
@@ -298,6 +298,7 @@ const keys = [
             document.querySelectorAll('.page-container').forEach(page => page.classList.remove('active-page'));
             document.getElementById(pageId).classList.add('active-page');
             
+            // إيقاف الصوت وتصفيره عند الخروج من صفحة اللعبة
             if(pageId !== 'flashcardPage') {
                 gameAudio.pause();
                 gameAudio.currentTime = 0;
@@ -364,7 +365,10 @@ const keys = [
                 return;
             }
             
-  new Audio('music.mp3').play().catch(e => console.log('تخطي خطأ التشغيل'));
+            // تشغيل الصوت بشكل سليم
+            gameAudio.currentTime = 0;
+            gameAudio.play().catch(e => console.log('تخطي خطأ التشغيل'));
+            
             document.getElementById('gameIntro').style.display = 'none';
             document.getElementById('gameBoard').style.display = 'flex';
             
@@ -430,7 +434,7 @@ const keys = [
             document.getElementById('gameBoard').style.display = 'none';
             document.getElementById('gameEnd').style.display = 'block';
             document.getElementById('finalScoreText').innerText = `🎉 انتهى التحدي! نتيجتك: ${score} من ${flashcardData.length}`;
-            gameAudio.pause();
+            gameAudio.pause(); // إيقاف الصوت عند انتهاء اللعبة
         }
 
         async function fetchAIResponse(promptText) {
@@ -440,7 +444,7 @@ const keys = [
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${API_KEY}`;
                 
                 try {
-           const response = await fetch(url, { 
+                    const response = await fetch(url, { 
                         method: "POST", 
                         headers: { "Content-Type": "application/json" }, 
                         body: JSON.stringify({ 
@@ -448,7 +452,7 @@ const keys = [
                             generationConfig: { 
                                 responseMimeType: "application/json", 
                                 temperature: 0.2, 
-                                maxOutputTokens: 150 // هذا هو السر اللي رح يخليه يرجع يطير
+                                maxOutputTokens: 150 
                             } 
                         }) 
                     });
@@ -469,39 +473,7 @@ const keys = [
             throw new Error("API Connection Error");
         }
 
-       async function fetchAIResponse(promptText) {
-            let attempt = 0;
-            while (attempt < keys.length) {
-                const API_KEY = keys[currentKeyIndex];
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${API_KEY}`;
-                
-                try {
-                    const response = await fetch(url, { 
-                        method: "POST", 
-                        headers: { "Content-Type": "application/json" }, 
-                        body: JSON.stringify({ 
-                            contents: [{ parts: [{ text: promptText }] }], 
-                            // هنا السحر: أجبرناه يرجع JSON سليم غصباً عنه بدون ما يقص الكلام
-                            generationConfig: { responseMimeType: "application/json", temperature: 0.2 } 
-                        }) 
-                    });
-                    
-                    if (!response.ok) {
-                        currentKeyIndex = (currentKeyIndex + 1) % keys.length;
-                        attempt++;
-                        continue;
-                    }
-                    
-                    const data = await response.json();
-                    return data.candidates[0].content.parts[0].text;
-                } catch (error) {
-                    currentKeyIndex = (currentKeyIndex + 1) % keys.length;
-                    attempt++;
-                }
-            }
-            throw new Error("API Connection Error");
-        }
-      function speakText(text) {
+        function speakText(text) {
             let speech = new SpeechSynthesisUtterance(text);
             speech.lang = 'en-US'; 
             speech.rate = 0.85; 
@@ -513,7 +485,8 @@ const keys = [
 
             window.speechSynthesis.speak(speech);
         }  
-async function processWord() {
+
+        async function processWord() {
             let newWord = document.getElementById("wordInput").value.trim().toLowerCase();
             if(newWord === "") { alert("الرجاء إدخال كلمة!"); return; }
             let resultDiv = document.getElementById("resultArea");
@@ -552,7 +525,6 @@ async function processWord() {
                     });
                 } catch(e) { console.log("تخطي خطأ التظليل"); }
                 
-                // هنا ضفنا أزرار الصوت 🔊 جنب الكلمة وجنب الجملة
                 resultDiv.innerHTML = `
                     <p>
                         <strong>الكلمة:</strong> ${aiData.word}
@@ -579,7 +551,6 @@ async function processWord() {
             }
             btn.disabled = false; document.getElementById("wordInput").value = ""; 
         }
-
 
         async function sendMessage() {
             let chatInput = document.getElementById("chatInput"); let message = chatInput.value.trim(); if(message === "") return;
