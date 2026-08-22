@@ -225,12 +225,13 @@
     </div>
 
     <script>
-const keys = [
-    "AQ.Ab8RN6J4x5HOlZYpUJHQz7An5mAoHc13" + "_8z_if0LJrNFj3Xagg",
-    "AQ.Ab8RN6JJpurt_GmNtShh75wYbM1ggffSRGDHD" + "_qU3-G0sn1FaQ",
-    "AQ.Ab8RN6LXS2RtJAsk6SiwtYKUaRNBwo" + "Cv3Kih1metCPCI9oBQlQ"
-];
-let currentKeyIndex = 0;
+        const keys = [
+            "AQ.Ab8RN6J4x5HOlZYpUJHQz7An5mAoHc13" + "_8z_if0LJrNFj3Xagg",
+            "AQ.Ab8RN6JJpurt_GmNtShh75wYbM1ggffSRGDHD" + "_qU3-G0sn1FaQ",
+            "AQ.Ab8RN6LXS2RtJAsk6SiwtYKUaRNBwo" + "Cv3Kih1metCPCI9oBQlQ"
+        ];
+        let currentKeyIndex = 0;
+        
         let savedData = JSON.parse(localStorage.getItem("savedVocabulary")) || [];
         let oldWords = JSON.parse(localStorage.getItem("savedEnglishWords"));
         if (oldWords && oldWords.length > 0 && savedData.length === 0) {
@@ -241,7 +242,6 @@ let currentKeyIndex = 0;
         // --- الوضع الداكن (Dark Mode Logic) ---
         const darkModeBtn = document.getElementById('darkModeToggle');
         
-        // التحقق من الذاكرة إذا كان المستخدم يفضل الوضع الداكن
         if (localStorage.getItem('theme') === 'dark') {
             document.body.classList.add('dark-mode');
             darkModeBtn.innerText = '☀️';
@@ -258,10 +258,8 @@ let currentKeyIndex = 0;
             }
         }
 
-        // --- إعداد الصوت المحلي ---
         const gameAudio = document.getElementById('bgMusic');
 
-        // --- التنقل ---
         function showPage(pageId) {
             document.querySelectorAll('.page-container').forEach(page => page.classList.remove('active-page'));
             document.getElementById(pageId).classList.add('active-page');
@@ -312,7 +310,6 @@ let currentKeyIndex = 0;
             }
         }
 
-        // --- منطق التحدي ---
         let flashcardData = [];
         let currentCardIndex = 0;
         let score = 0;
@@ -333,11 +330,8 @@ let currentKeyIndex = 0;
                 return;
             }
             
-            // تشغيل الموسيقى
             gameAudio.currentTime = 0;
-            gameAudio.play().catch(error => {
-                console.log("تأكد من فتح الموقع عبر Live Server", error);
-            });
+            gameAudio.play().catch(error => { console.log("تأكد من إعدادات الصوت", error); });
 
             document.getElementById('gameIntro').style.display = 'none';
             document.getElementById('gameBoard').style.display = 'flex';
@@ -396,7 +390,7 @@ let currentKeyIndex = 0;
         }
 
         function updateScoreDisplay() {
-            document.getElementById('scoreDisplay').innerText = `🏆 ${score} / ${currentCardIndex + (currentCardIndex < flashcardData.length ? 0 : 0)}`;
+            document.getElementById('scoreDisplay').innerText = `🏆 ${score} /${currentCardIndex + (currentCardIndex < flashcardData.length ? 0 : 0)}`;
         }
 
         function endGame() {
@@ -407,31 +401,39 @@ let currentKeyIndex = 0;
             gameAudio.pause();
         }
 
- async function fetchAIResponse(promptText) {
-    let attempt = 0;
-    while (attempt < keys.length) {
-        const API_KEY = keys[currentKeyIndex];
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${API_KEY}`;
-        
-        try {
-const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }], generationConfig: { maxOutputTokens: 300, temperature: 0.2 } }) });
-            if (!response.ok) {
-                // إذا فشل المفتاح، انتقل للمفتاح اللي بعده
-                currentKeyIndex = (currentKeyIndex + 1) % keys.length;
-                attempt++;
-                continue;
+        async function fetchAIResponse(promptText) {
+            let attempt = 0;
+            while (attempt < keys.length) {
+                const API_KEY = keys[currentKeyIndex];
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${API_KEY}`;
+                
+                try {
+                    const response = await fetch(url, { 
+                        method: "POST", 
+                        headers: { "Content-Type": "application/json" }, 
+                        body: JSON.stringify({ 
+                            contents: [{ parts: [{ text: promptText }] }], 
+                            generationConfig: { maxOutputTokens: 300, temperature: 0.2 } 
+                        }) 
+                    });
+                    
+                    if (!response.ok) {
+                        currentKeyIndex = (currentKeyIndex + 1) % keys.length;
+                        attempt++;
+                        continue;
+                    }
+                    
+                    const data = await response.json();
+                    return data.candidates[0].content.parts[0].text;
+                } catch (error) {
+                    currentKeyIndex = (currentKeyIndex + 1) % keys.length;
+                    attempt++;
+                }
             }
-            
-            const data = await response.json();
-            return data.candidates[0].content.parts[0].text;
-        } catch (error) {
-            currentKeyIndex = (currentKeyIndex + 1) % keys.length;
-            attempt++;
+            throw new Error("API Connection Error");
         }
-    }
-    throw new Error("API Connection Error");
-}
-async function processWord() {
+
+        async function processWord() {
             let newWord = document.getElementById("wordInput").value.trim().toLowerCase();
             if(newWord === "") { alert("الرجاء إدخال كلمة!"); return; }
             let resultDiv = document.getElementById("resultArea");
@@ -442,11 +444,10 @@ async function processWord() {
 
             let previousWordsList = savedData.map(item => item.word).slice(-4).join(" ، "); 
             
-            // طلبنا منه يعطينا معلومات صافية فقط (مستوى A2) بدون ما يكتب HTML
             let prompt = `ترجم الكلمة العربية "${newWord}" إلى الإنجليزية، ثم ضعها في جملة سياقية بسيطة بمستوى A2.
 الكلمات السابقة: [${previousWordsList}].
 ضع الكلمة الجديدة داخل وسم <mark class='new-word'> وإذا استخدمت كلمة سابقة ضعها داخل <mark class='old-word'>.
-أرجع النتيجة بصيغة JSON فقط:
+أرجع النتيجة بصيغة JSON فقط وبدون أي نصوص إضافية، وهذا هو التنسيق المطلوب:
 {
   "word": "الكلمة بالإنجليزية",
   "translation": "الترجمة بالعربية",
@@ -456,10 +457,11 @@ async function processWord() {
 
             try {
                 let aiRawText = await fetchAIResponse(prompt);
+                console.log("النص الخام من الذكاء الاصطناعي:", aiRawText);
+                
                 let jsonString = aiRawText.replace(/```json/g, '').replace(/```html/g, '').replace(/```/g, '').trim();
                 let aiData = JSON.parse(jsonString);
                 
-                // هنا الجافاسكريبت هو اللي بيبني التصميم، وهذي الطريقة مستحيل تضرب!
                 resultDiv.innerHTML = `
                     <p><strong>الكلمة:</strong> ${aiData.word}</p>
                     <p><strong>الترجمة:</strong> ${aiData.translation}</p>
@@ -475,10 +477,8 @@ async function processWord() {
                     localStorage.setItem("savedVocabulary", JSON.stringify(savedData));
                 }
             } catch (error) { 
-                // ضفنا هذا السطر عشان لو صار خطأ يظهر لك في الـ Console وماتكون الشاشة فاضية
-                console.error("تفاصيل الخطأ:", error);
-                console.log("النص اللي رجعه الذكاء الاصطناعي:", aiRawText);
-                resultDiv.innerHTML = `<p style="color:#d93025; font-weight: bold;">❌ حدث خطأ! قد يكون الذكاء الاصطناعي مرتبكاً، جرب مرة أخرى.</p>`; 
+                console.error("تفاصيل الخطأ الدقيقة:", error);
+                resultDiv.innerHTML = `<p style="color:#d93025; font-weight: bold;">❌ حدث خطأ! افتح شاشة الفحص لمعرفة السبب.</p>`; 
             }
             btn.disabled = false; document.getElementById("wordInput").value = ""; 
         }
@@ -487,9 +487,14 @@ async function processWord() {
             let chatInput = document.getElementById("chatInput"); let message = chatInput.value.trim(); if(message === "") return;
             let chatBox = document.getElementById("chatBox"); let btn = document.getElementById("chatBtn");
             chatBox.innerHTML += `<div class="msg-user">${message}</div>`; chatInput.value = ""; btn.disabled = true;
-            let prompt = `أنت مساعد ذكي لتعليم اللغة الإنجليزية. المستخدم يسألك: "${message}". أجب بشكل مختصر، ودي، ومفيد باللغة التي سألك بها. لا تستخدم أكواد برمجية.`;
-            try { let aiReply = await fetchAIResponse(prompt); chatBox.innerHTML += `<div class="msg-ai">${aiReply.replace(/```/g, '')}</div>`;
-            } catch (error) { chatBox.innerHTML += `<div class="msg-ai" style="color:#d93025;">خطأ في الاتصال.</div>`; }
+            let prompt = `أنت مساعد ذكي لتعليم اللغة الإنجليزية. المستخدم يسألك: "${message}". أجب بشكل مختصر، ودي، ومفيد باللغة التي سألك بها بمستوى A2. لا تستخدم أكواد برمجية.`;
+            try { 
+                let aiReply = await fetchAIResponse(prompt); 
+                chatBox.innerHTML += `<div class="msg-ai">${aiReply.replace(/```/g, '')}</div>`;
+            } catch (error) { 
+                console.error(error);
+                chatBox.innerHTML += `<div class="msg-ai" style="color:#d93025;">خطأ في الاتصال.</div>`; 
+            }
             chatBox.scrollTop = chatBox.scrollHeight; btn.disabled = false;
         }
     </script>
