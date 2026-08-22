@@ -225,9 +225,12 @@
     </div>
 
     <script>
-const part1 = "AQ.Ab8RN6J4x5HOlZYpUJHQz7An5mAoHc13";
-const part2 = "_8z_if0LJrNFj3Xagg";
-const API_KEY = part1 + part2;
+const keys = [
+    "AQ.Ab8RN6J4x5HOlZYpUJHQz7An5mAoHc13" + "_8z_if0LJrNFj3Xagg",
+    "AQ.Ab8RN6JJpurt_GmNtShh75wYbM1ggffSRGDHD" + "_qU3-G0sn1FaQ",
+    "AQ.Ab8RN6LXS2RtJAsk6SiwtYKUaRNBwo" + "Cv3Kih1metCPCI9oBQlQ"
+];
+let currentKeyIndex = 0;
         let savedData = JSON.parse(localStorage.getItem("savedVocabulary")) || [];
         let oldWords = JSON.parse(localStorage.getItem("savedEnglishWords"));
         if (oldWords && oldWords.length > 0 && savedData.length === 0) {
@@ -404,15 +407,31 @@ const API_KEY = part1 + part2;
             gameAudio.pause();
         }
 
-        // --- الذكاء الاصطناعي ---
-        async function fetchAIResponse(promptText) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${API_KEY}`;
+ async function fetchAIResponse(promptText) {
+    let attempt = 0;
+    while (attempt < keys.length) {
+        const API_KEY = keys[currentKeyIndex];
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${API_KEY}`;
+        
+        try {
             const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] }) });
-            if (!response.ok) throw new Error("API Connection Error");
+            
+            if (!response.ok) {
+                // إذا فشل المفتاح، انتقل للمفتاح اللي بعده
+                currentKeyIndex = (currentKeyIndex + 1) % keys.length;
+                attempt++;
+                continue;
+            }
+            
             const data = await response.json();
             return data.candidates[0].content.parts[0].text;
+        } catch (error) {
+            currentKeyIndex = (currentKeyIndex + 1) % keys.length;
+            attempt++;
         }
-
+    }
+    throw new Error("API Connection Error");
+}
         async function processWord() {
             let newWord = document.getElementById("wordInput").value.trim().toLowerCase();
             if(newWord === "") { alert("الرجاء إدخال كلمة!"); return; }
