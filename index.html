@@ -431,7 +431,7 @@ const response = await fetch(url, { method: "POST", headers: { "Content-Type": "
     }
     throw new Error("API Connection Error");
 }
-    async function processWord() {
+async function processWord() {
             let newWord = document.getElementById("wordInput").value.trim().toLowerCase();
             if(newWord === "") { alert("الرجاء إدخال كلمة!"); return; }
             let resultDiv = document.getElementById("resultArea");
@@ -441,28 +441,45 @@ const response = await fetch(url, { method: "POST", headers: { "Content-Type": "
             btn.disabled = true;
 
             let previousWordsList = savedData.map(item => item.word).slice(-4).join(" ، "); 
-            let prompt = `المطلوب ترجمة الكلمة العربية "${newWord}" إلى الإنجليزية، ثم وضعها في جملة سياقية بسيطة بمستوى A2.
-الكلمات السابقة في الذاكرة (استخدم واحدة منها إن أمكن): [${previousWordsList}].
-أرجع النتيجة بصيغة JSON فقط لا غير، وبدون أي نصوص إضافية.
-تنسيق الـ JSON المطلوب:
+            
+            // طلبنا منه يعطينا معلومات صافية فقط (مستوى A2) بدون ما يكتب HTML
+            let prompt = `ترجم الكلمة العربية "${newWord}" إلى الإنجليزية، ثم ضعها في جملة سياقية بسيطة بمستوى A2.
+الكلمات السابقة: [${previousWordsList}].
+ضع الكلمة الجديدة داخل وسم <mark class='new-word'> وإذا استخدمت كلمة سابقة ضعها داخل <mark class='old-word'>.
+أرجع النتيجة بصيغة JSON فقط:
 {
   "word": "الكلمة بالإنجليزية",
   "translation": "الترجمة بالعربية",
-  "sentence": "الجملة الإنجليزية",
-  "html": "<p><strong>الكلمة:</strong> الكلمة بالإنجليزية</p><p><strong>الترجمة:</strong> الترجمة بالعربية</p><hr style='border: 0; border-top: 1px solid #e8eaed; margin: 15px 0;'><p style='color: #5f6368; font-size: 16px;'>الجملة التراكمية:</p><p class='english-sentence'>الجملة الإنجليزية مع وضع الكلمة الجديدة داخل وسم <mark class='new-word'> والكلمة القديمة داخل <mark class='old-word'></p><p style='color: #5f6368; font-size: 18px; font-weight: 700; margin-top: 10px; text-align: right; direction: rtl;'>ترجمة الجملة الإنجليزية للعربية</p>"
+  "sentence": "الجملة الإنجليزية مع وسوم mark",
+  "sentenceAr": "ترجمة الجملة للعربية"
 }`;
 
             try {
                 let aiRawText = await fetchAIResponse(prompt);
                 let jsonString = aiRawText.replace(/```json/g, '').replace(/```html/g, '').replace(/```/g, '').trim();
                 let aiData = JSON.parse(jsonString);
-                resultDiv.innerHTML = aiData.html;
+                
+                // هنا الجافاسكريبت هو اللي بيبني التصميم، وهذي الطريقة مستحيل تضرب!
+                resultDiv.innerHTML = `
+                    <p><strong>الكلمة:</strong> ${aiData.word}</p>
+                    <p><strong>الترجمة:</strong> ${aiData.translation}</p>
+                    <hr style="border: 0; border-top: 1px solid #e8eaed; margin: 15px 0;">
+                    <p style="color: #5f6368; font-size: 16px;">الجملة التراكمية:</p>
+                    <p class="english-sentence">${aiData.sentence}</p>
+                    <p style="color: #5f6368; font-size: 18px; font-weight: 700; margin-top: 10px; text-align: right; direction: rtl;">${aiData.sentenceAr}</p>
+                `;
+                
                 let wordExists = savedData.some(item => item.word.toLowerCase() === aiData.word.toLowerCase());
                 if(!wordExists) {
                     savedData.push({ word: aiData.word, translation: aiData.translation, sentence: aiData.sentence, hidden: false });
                     localStorage.setItem("savedVocabulary", JSON.stringify(savedData));
                 }
-            } catch (error) { resultDiv.innerHTML = `<p style="color:#d93025; font-weight: bold;">❌ حدث خطأ! قد يكون الذكاء الاصطناعي مرتبكاً، جرب مرة أخرى.</p>`; }
+            } catch (error) { 
+                // ضفنا هذا السطر عشان لو صار خطأ يظهر لك في الـ Console وماتكون الشاشة فاضية
+                console.error("تفاصيل الخطأ:", error);
+                console.log("النص اللي رجعه الذكاء الاصطناعي:", aiRawText);
+                resultDiv.innerHTML = `<p style="color:#d93025; font-weight: bold;">❌ حدث خطأ! قد يكون الذكاء الاصطناعي مرتبكاً، جرب مرة أخرى.</p>`; 
+            }
             btn.disabled = false; document.getElementById("wordInput").value = ""; 
         }
 
