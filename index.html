@@ -508,7 +508,8 @@
 
             try {
                 let aiRawText = await fetchAIResponse(prompt);
-                let aiData = JSON.parse(aiRawText);
+          let cleanJson = aiRawText.substring(aiRawText.indexOf('{'), aiRawText.lastIndexOf('}') + 1);
+let aiData = JSON.parse(cleanJson);
                 
                 let finalSentence = aiData.sentence;
                 
