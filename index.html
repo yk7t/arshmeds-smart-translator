@@ -503,6 +503,18 @@ const keys = [
             }
             throw new Error("API Connection Error");
         }
+      function speakText(text) {
+            let speech = new SpeechSynthesisUtterance(text);
+            speech.lang = 'en-US'; 
+            speech.rate = 0.85; 
+            speech.volume = 1;
+
+            let voices = window.speechSynthesis.getVoices();
+            let bestVoice = voices.find(v => v.name.includes('Google US English') || v.name.includes('Zira') || v.name.includes('Samantha'));
+            if(bestVoice) speech.voice = bestVoice;
+
+            window.speechSynthesis.speak(speech);
+        }  
 async function processWord() {
             let newWord = document.getElementById("wordInput").value.trim().toLowerCase();
             if(newWord === "") { alert("الرجاء إدخال كلمة!"); return; }
