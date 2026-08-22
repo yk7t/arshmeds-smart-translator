@@ -466,7 +466,7 @@
             throw new Error("API Connection Error");
         }
 
-        async function processWord() {
+ async function processWord() {
             let newWord = document.getElementById("wordInput").value.trim().toLowerCase();
             if(newWord === "") { alert("الرجاء إدخال كلمة!"); return; }
             let resultDiv = document.getElementById("resultArea");
@@ -477,37 +477,51 @@
 
             let previousWordsList = savedData.map(item => item.word).slice(-4).join(" ، "); 
             
-            let prompt = `ترجم الكلمة العربية "${newWord}" إلى الإنجليزية، ثم ضعها في جملة سياقية بسيطة بمستوى A2.
-الكلمات السابقة: [${previousWordsList}].
-ضع الكلمة الجديدة داخل وسم <mark class='new-word'> وإذا استخدمت كلمة سابقة ضعها داخل <mark class='old-word'>.
-أرجع النتيجة بهذا الهيكل:
+            // بسطنا الأمر لأقصى درجة عشان ما يفكر! طلبنا منه نصوص صافية فقط.
+            let prompt = `ترجم "${newWord}" للإنجليزية، وضعها في جملة قصيرة جداً (A2).
+حاول استخدام إحدى هذه الكلمات إن أمكن: [${previousWordsList}].
 {
-  "word": "الكلمة بالإنجليزية",
-  "translation": "الترجمة بالعربية",
-  "sentence": "الجملة الإنجليزية مع وسوم mark",
-  "sentenceAr": "ترجمة الجملة للعربية"
+  "word": "الكلمة بالإنجليزية فقط",
+  "translation": "الترجمة بالعربية فقط",
+  "sentence": "الجملة الإنجليزية الصافية بدون أي أكواد أو تنسيق",
+  "sentenceAr": "ترجمة الجملة"
 }`;
 
             try {
                 let aiRawText = await fetchAIResponse(prompt);
                 let aiData = JSON.parse(aiRawText);
                 
+                let finalSentence = aiData.sentence;
+                
+                // هنا الجافاسكريبت بتتكفل بالتظليل بلمح البصر بدل الذكاء الاصطناعي
+                try {
+                    let regexNew = new RegExp(`\\b${aiData.word}\\b`, 'gi');
+                    finalSentence = finalSentence.replace(regexNew, "<mark class='new-word'>$&</mark>");
+                    
+                    let oldWordsArr = previousWordsList.split(" ، ");
+                    oldWordsArr.forEach(oldW => {
+                        if (oldW.trim() !== "") {
+                            let regexOld = new RegExp(`\\b${oldW}\\b`, 'gi');
+                            finalSentence = finalSentence.replace(regexOld, "<mark class='old-word'>$&</mark>");
+                        }
+                    });
+                } catch(e) { console.log("تخطي خطأ التظليل"); }
+                
                 resultDiv.innerHTML = `
                     <p><strong>الكلمة:</strong> ${aiData.word}</p>
                     <p><strong>الترجمة:</strong> ${aiData.translation}</p>
                     <hr style="border: 0; border-top: 1px solid #e8eaed; margin: 15px 0;">
                     <p style="color: #5f6368; font-size: 16px;">الجملة التراكمية:</p>
-                    <p class="english-sentence">${aiData.sentence}</p>
+                    <p class="english-sentence">${finalSentence}</p>
                     <p style="color: #5f6368; font-size: 18px; font-weight: 700; margin-top: 10px; text-align: right; direction: rtl;">${aiData.sentenceAr}</p>
                 `;
                 
                 let wordExists = savedData.some(item => item.word.toLowerCase() === aiData.word.toLowerCase());
                 if(!wordExists) {
-                    savedData.push({ word: aiData.word, translation: aiData.translation, sentence: aiData.sentence, hidden: false });
+                    savedData.push({ word: aiData.word, translation: aiData.translation, sentence: finalSentence, hidden: false });
                     localStorage.setItem("savedVocabulary", JSON.stringify(savedData));
                 }
             } catch (error) { 
-                // رجعنا الرسالة الودية للناس، والخطأ رح ينطبع في الخلفية بس
                 console.error("الخطأ البرمجي:", error);
                 resultDiv.innerHTML = `<p style="color:#d93025; font-weight: bold;">❌ حدث خطأ! قد يكون الذكاء الاصطناعي مرتبكاً، جرب مرة أخرى.</p>`; 
             }
