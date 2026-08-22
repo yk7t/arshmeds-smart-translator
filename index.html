@@ -11,6 +11,7 @@
   gtag('config', 'G-2ZZRJYDWY8');
 </script>
     <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>مترجم الكلمات الذكي | تطبيق متكامل</title>
     <!-- استدعاء خط Cairo الاحترافي -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
@@ -141,6 +142,41 @@
         body.dark-mode #fcFront p.hint { color: #ffc107 !important; }
         body.dark-mode #scoreDisplay { color: #1a73e8 !important; }
         body.dark-mode #timerDisplay, body.dark-mode #gameIntroMsg { color: #d93025 !important; }
+        /* =========================================
+           التجاوب مع شاشات الجوال (Responsive Design)
+           ========================================= */
+        @media (max-width: 768px) {
+            /* تحويل التخطيط من أفقي لعمودي */
+            .active-page { flex-direction: column !important; gap: 15px; }
+            
+            /* تعديل الأزرار لتناسب شاشة الجوال */
+            .menu-btn { width: 100%; max-width: 100%; padding: 15px; font-size: 18px; margin: 10px 0; }
+            
+            /* ضبط المسافات للترجمة والمحادثة (فوق بعض) */
+            .main-app, .chat-sidebar { width: 100%; box-sizing: border-box; padding: 15px; margin: 0; }
+            
+            /* تصغير العناوين لتناسب الشاشة الصغيرة */
+            #landingPage h1 { font-size: 26px; }
+            #landingPage p { font-size: 16px; margin-bottom: 20px; }
+            
+            /* الكلمات المحفوظة: عمود واحد بدل شبكة */
+            #savedWordsContainer { grid-template-columns: 1fr; }
+            
+            /* ضبط لعبة الفلاش كاردز لتلائم الجوال */
+            .flashcard-container { width: 100%; height: 300px; margin: 10px auto; }
+            .flashcard-front h2, .flashcard-back h2 { font-size: 32px; }
+            .flashcard-front p.sentence { font-size: 18px; line-height: 1.4; }
+            .fc-btn { padding: 10px 15px; font-size: 14px; width: 100%; margin-bottom: 5px; }
+            .flashcard-controls { flex-direction: column; gap: 10px; }
+            
+            /* تصغير حجم خط الترجمة التراكمية */
+            .english-sentence { font-size: 20px; }
+            .result { font-size: 16px; padding: 15px; }
+            
+            /* أزرار الرجوع وتنسيقات أخرى */
+            .back-btn { width: 100%; text-align: center; margin-bottom: 15px; }
+            body { padding: 10px; height: auto; min-height: 100vh; }
+        }
     </style>
 </head>
 <body>
