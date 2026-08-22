@@ -364,9 +364,7 @@ const keys = [
                 return;
             }
             
-            gameAudio.currentTime = 0;
-            gameAudio.play().catch(error => { console.log("تأكد من إعدادات الصوت", error); });
-
+  new Audio('music.mp3').play().catch(e => console.log('تخطي خطأ التشغيل'));
             document.getElementById('gameIntro').style.display = 'none';
             document.getElementById('gameBoard').style.display = 'flex';
             
