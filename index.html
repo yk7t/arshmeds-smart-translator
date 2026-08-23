@@ -199,8 +199,10 @@
         <div class="main-app">
             <button class="back-btn" onclick="showPage('landingPage')">🔙 العودة للرئيسية</button>
             <h2 style="color: #1a73e8;">مترجم الكلمات التراكمي 🚀</h2>
-            <p style="color: #5f6368; margin-bottom: 25px;">أدخل كلمتك بالإنجليزية ليتكفل الذكاء الاصطناعي بتصحيحها، ترجمتها، ووضعها في جملة سياقية!</p>
-            <input type="text" id="wordInput" placeholder="Type an English word...">
+            <!-- تم تعديل النص هنا ليعكس التحديث الجديد -->
+            <p style="color: #5f6368; margin-bottom: 25px;">أدخل كلمتك بالعربية أو الإنجليزية ليتكفل الذكاء الاصطناعي بالترجمة ووضعها في جملة سياقية!</p>
+            <!-- تم تعديل الـ Placeholder هنا -->
+            <input type="text" id="wordInput" placeholder="أدخل كلمة بالعربية أو الإنجليزية...">
             <button class="action-btn" id="translateBtn" onclick="processWord()">ترجم وأضف للجملة</button>
             <div id="resultArea" class="result"></div>
         </div>
@@ -441,7 +443,7 @@ async function fetchAIResponse(promptText) {
             let attempt = 0;
             while (attempt < keys.length) {
                 const API_KEY = keys[currentKeyIndex];
-                // استخدمنا أسرع إصدار رسمي من جوجل
+                // إصدار جوجل اللي شغال معاك زي الفل
              const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${API_KEY}`;
                 
                 try {
@@ -497,14 +499,18 @@ async function fetchAIResponse(promptText) {
 
             let previousWordsList = savedData.map(item => item.word).slice(-4).join(" ، "); 
             
-            let prompt = `ترجم "${newWord}" للإنجليزية، وضعها في جملة قصيرة جداً (A2).
-حاول استخدام إحدى هذه الكلمات إن أمكن: [${previousWordsList}].
+            // التعديل الجوهري هنا ليدعم اللغتين مع الحفاظ على نفس البنية للعبة الفلاش كاردز
+            let prompt = `أنا سأعطيك كلمة: "${newWord}".
+إذا كانت الكلمة بالعربية، ترجمها للإنجليزية. وإذا كانت بالإنجليزية، ترجمها للعربية.
+في كلتا الحالتين، أريد الرد بتنسيق JSON دقيق كالتالي:
 {
-  "word": "الكلمة بالإنجليزية فقط",
-  "translation": "الترجمة بالعربية فقط",
-  "sentence": "الجملة الإنجليزية الصافية بدون أي أكواد أو تنسيق",
-  "sentenceAr": "ترجمة الجملة"
-}`;
+  "word": "الكلمة باللغة الإنجليزية حصراً (سواء كانت هي الأصل أو الترجمة)",
+  "translation": "الكلمة باللغة العربية حصراً (سواء كانت هي الأصل أو الترجمة)",
+  "sentence": "جملة قصيرة جداً (مستوى A2) باللغة الإنجليزية تستخدم فيها الكلمة الإنجليزية",
+  "sentenceAr": "ترجمة الجملة إلى العربية"
+}
+حاول استخدام إحدى هذه الكلمات في الجملة إن أمكن: [${previousWordsList}].
+لا تضف أي نص خارج الـ JSON.`;
 
             try {
                 let aiRawText = await fetchAIResponse(prompt);
