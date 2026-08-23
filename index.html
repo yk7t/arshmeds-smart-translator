@@ -437,11 +437,12 @@
             gameAudio.pause(); // إيقاف الصوت عند انتهاء اللعبة
         }
 
-        async function fetchAIResponse(promptText) {
+async function fetchAIResponse(promptText) {
             let attempt = 0;
             while (attempt < keys.length) {
                 const API_KEY = keys[currentKeyIndex];
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${API_KEY}`;
+                // استخدمنا أسرع إصدار رسمي من جوجل
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
                 
                 try {
                     const response = await fetch(url, { 
@@ -449,10 +450,11 @@
                         headers: { "Content-Type": "application/json" }, 
                         body: JSON.stringify({ 
                             contents: [{ parts: [{ text: promptText }] }], 
-                       generationConfig: { 
+                            generationConfig: { 
                                 responseMimeType: "application/json", 
-                                temperature: 0.2 
-                            }
+                                temperature: 0.2, 
+                                maxOutputTokens: 250 // رقم سحري للسرعة وعدم القطع
+                            } 
                         }) 
                     });
                     
@@ -471,7 +473,6 @@
             }
             throw new Error("API Connection Error");
         }
-
         function speakText(text) {
             let speech = new SpeechSynthesisUtterance(text);
             speech.lang = 'en-US'; 
