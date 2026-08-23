@@ -1,0 +1,24 @@
+{
+  "name": "arshmeds-smart-translator",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node --watch server/index.js",
+    "start": "node server/index.js",
+    "setup-auth": "node scripts/setup-auth.js",
+    "test": "node --test test/*.test.js",
+    "lint": "node --check server/index.js && node --check server/app.js && node --check server/ai.js && node --check server/auth.js && node --check scripts/setup-auth.js && node --check public/js/app.js && node --check public/js/storage.js && node --check public/js/game.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.0.1",
+    "helmet": "^8.1.0",
+    "zod": "^4.1.5"
+  }
+}
