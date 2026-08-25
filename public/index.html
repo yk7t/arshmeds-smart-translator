@@ -1,86 +1,185 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مترجم الكلمات الذكي</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- ربطنا ملف الألوان هنا -->
-    <link rel="stylesheet" href="style.css"> 
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="مترجم ذكي يساعدك على حفظ الكلمات الإنجليزية داخل جمل متكررة.">
+  <title>مترجم الكلمات الذكي</title>
+  <link rel="stylesheet" href="/styles.css?v=2.1.0">
+  <script type="module" src="/js/app.js?v=2.1.0"></script>
 </head>
 <body>
-    <button id="darkModeToggle" onclick="toggleDarkMode()">🌙</button>
-    <audio id="bgMusic" src="music.mp3" loop></audio>
+  <button id="themeToggle" class="icon-button theme-toggle" type="button" aria-label="تفعيل الوضع الداكن">🌙</button>
+  <audio id="gameAudio" src="/music.mp3" loop preload="none"></audio>
 
-    <div id="landingPage" class="page-container active-page">
-        <h1>مرحباً بك في مترجمك التراكمي الذكي 🚀</h1>
-        <p>اختر ما تود القيام به اليوم</p>
-        <button class="menu-btn" onclick="showPage('translationPage')">🌍 ترجمة و تعلم كلمات جديدة</button>
-        <button class="menu-btn green-btn" onclick="showPage('savedWordsPage')">📚 قاموس الكلمات المحفوظة</button>
-        <button class="menu-btn yellow-btn" onclick="showPage('flashcardPage')">🎮 لعبة تنشيط الذاكرة</button>
+  <div id="authLoading" class="auth-loading" role="status">جاري فتح البرنامج…</div>
+
+  <section id="loginPage" class="login-page" aria-labelledby="loginTitle" hidden>
+    <div class="login-card">
+      <div class="login-logo" aria-hidden="true">🌍</div>
+      <h1 id="loginTitle">مترجم الكلمات الذكي</h1>
+      <p>سجّل الدخول للوصول إلى قاموسك وتدريباتك.</p>
+      <form id="loginForm" novalidate>
+        <label for="loginEmail">البريد الإلكتروني</label>
+        <input id="loginEmail" name="email" type="email" maxlength="254" autocomplete="username" placeholder="name@example.com" required>
+        <label for="loginPassword">كلمة المرور</label>
+        <input id="loginPassword" name="password" type="password" maxlength="200" autocomplete="current-password" placeholder="••••••••••••" required>
+        <button id="loginButton" class="action-button primary" type="submit">تسجيل الدخول</button>
+      </form>
+      <p id="loginStatus" class="login-status" role="alert" aria-live="polite"></p>
     </div>
+  </section>
 
-    <div id="translationPage" class="page-container">
-        <div class="main-app">
-            <button class="back-btn" onclick="showPage('landingPage')">🔙 العودة للرئيسية</button>
-            <h2 style="color: #1a73e8;">مترجم الكلمات التراكمي 🚀</h2>
-            <p style="color: #5f6368; margin-bottom: 25px;">أدخل كلمتك بالعربية أو الإنجليزية ليتكفل الذكاء الاصطناعي بالترجمة ووضعها في جملة سياقية!</p>
-            <input type="text" id="wordInput" placeholder="أدخل كلمة بالعربية أو الإنجليزية...">
-            <button class="action-btn" id="translateBtn" onclick="processWord()">ترجم وأضف للجملة</button>
-            <div id="resultArea" class="result"></div>
+  <main id="appShell" class="app-shell" hidden>
+    <button id="logoutButton" class="logout-button" type="button">تسجيل الخروج</button>
+    <section id="homePage" class="page home-page active" aria-labelledby="homeTitle">
+      <h1 id="homeTitle">مرحباً بك في مترجمك التراكمي الذكي 🚀</h1>
+      <p class="lead">اختر ما تود القيام به اليوم</p>
+      <nav class="main-menu" aria-label="القائمة الرئيسية">
+        <button class="menu-button primary" type="button" data-page="translationPage">🌍 ترجمة وتعلّم كلمات جديدة</button>
+        <button class="menu-button success" type="button" data-page="dictionaryPage">📚 قاموس الكلمات المحفوظة</button>
+        <button class="menu-button warning" type="button" data-page="gamePage">🎮 لعبة تنشيط الذاكرة</button>
+      </nav>
+      <div class="stats-strip" aria-label="إحصاءات الكلمات">
+        <span><strong id="homeLearningCount">0</strong> قيد التعلم</span>
+        <span><strong id="homeMasteredCount">0</strong> أتقنتها</span>
+      </div>
+    </section>
+
+    <section id="translationPage" class="page" aria-labelledby="translationTitle">
+      <header class="page-header">
+        <button class="back-button" type="button" data-page="homePage">العودة للرئيسية <span aria-hidden="true">←</span></button>
+        <div>
+          <h2 id="translationTitle">مترجم الكلمات التراكمي 🚀</h2>
+          <p>أدخل كلمتك بالعربية أو الإنجليزية ليضعها الذكاء الاصطناعي في جملة سياقية.</p>
         </div>
+      </header>
 
-        <div class="chat-sidebar">
-            <h3 style="color: #1a73e8; margin-top: 0;">مساعدك الذكي 🤖</h3>
-            <div class="chat-box" id="chatBox">
-                <div class="msg-ai">Hello! I am ready to help you with English.</div>
+      <div class="translation-layout">
+        <article class="panel translation-panel">
+          <form id="translationForm" novalidate>
+            <label for="wordInput">الكلمة بالعربية أو الإنجليزية</label>
+            <div class="input-action-row">
+              <input id="wordInput" name="word" type="text" maxlength="80" autocomplete="off" placeholder="مثال: فرصة أو opportunity" required>
+              <button id="translateButton" class="action-button success" type="submit">ترجم وأضف للجملة</button>
             </div>
-            <input type="text" id="chatInput" class="chat-input" placeholder="اسألني أي سؤال هنا...">
-            <button id="chatBtn" class="chat-btn" onclick="sendMessage()">إرسال</button>
-        </div>
-    </div>
-
-    <div id="savedWordsPage" class="page-container">
-        <div><button class="back-btn" onclick="showPage('landingPage')">🔙 العودة للرئيسية</button></div>
-        <h2 style="color: #34a853; margin-top: 0;">📚 قائمة كلماتك المحفوظة</h2>
-        <div id="savedWordsContainer"></div>
-    </div>
-
-    <div id="flashcardPage" class="page-container">
-        <div style="width: 100%; text-align: right;">
-            <button class="back-btn" onclick="showPage('landingPage')">🔙 العودة للرئيسية</button>
-        </div>
-        <div id="gameIntro" style="text-align: center; margin-top: 30px;">
-            <h2 style="color: #fbbc04; font-size: 36px; margin-top: 0;">🎮 تحدي الذاكرة مع الموسيقى!</h2>
-            <p style="font-size: 20px; color: #5f6368; margin-bottom: 30px;">أمامك 7 ثوانٍ لتتذكر معنى الكلمة قبل أن تنقلب البطاقة.</p>
-            <button class="menu-btn yellow-btn" onclick="startGame()">▶️ بدء التحدي</button>
-            <p id="gameIntroMsg" style="color: #d93025; font-weight: bold; margin-top: 15px;"></p>
-        </div>
-
-        <div id="gameBoard" style="display: none; width: 100%; flex-direction: column; align-items: center;">
-            <div style="display: flex; justify-content: space-between; width: 600px; max-width: 90%; margin-bottom: 10px;">
-                <span id="timerDisplay" style="font-size: 28px; font-weight: bold; color: #d93025;">⏱️ 7</span>
-                <span id="scoreDisplay" style="font-size: 28px; font-weight: bold; color: #1a73e8;">🏆 0 / 0</span>
+            <p class="field-hint">اكتب كلمة واحدة أو عبارة قصيرة من ثلاث كلمات كحد أقصى.</p>
+          </form>
+          <div id="translationStatus" class="status-message" role="status" aria-live="polite"></div>
+          <section id="translationResult" class="result-card" hidden aria-labelledby="resultWord">
+            <div class="result-heading">
+              <div>
+                <p class="eyebrow">الكلمة الإنجليزية</p>
+                <h3 id="resultWord" dir="ltr"></h3>
+              </div>
+              <button id="speakWordButton" class="icon-button" type="button" aria-label="نطق الكلمة">🔊</button>
             </div>
-            <div class="flashcard-container" id="fcContainer">
-                <div class="flashcard-inner">
-                    <div class="flashcard-front" id="fcFront"></div>
-                    <div class="flashcard-back" id="fcBack"></div>
-                </div>
+            <p class="translation-line"><span>المعنى:</span> <strong id="resultTranslation"></strong></p>
+            <div class="sentence-box">
+              <p id="resultSentence" class="english-sentence" dir="ltr"></p>
+              <button id="speakSentenceButton" class="icon-button" type="button" aria-label="نطق الجملة">🔊</button>
             </div>
-            <div class="flashcard-controls" id="evalControls" style="display: none;">
-                <button class="fc-btn" style="background-color: #34a853; color: white;" onclick="answerCard(true)">✅ عرفتها (نقطة)</button>
-                <button class="fc-btn" style="background-color: #d93025; color: white;" onclick="answerCard(false)">❌ أخطأت (بلا نقاط)</button>
-            </div>
-        </div>
+            <p id="resultSentenceAr" class="arabic-sentence"></p>
+          </section>
+        </article>
 
-        <div id="gameEnd" style="display: none; text-align: center; margin-top: 50px;">
-            <h2 id="finalScoreText" style="color: #1a73e8; font-size: 40px;"></h2>
-            <button class="menu-btn green-btn" onclick="showPage('flashcardPage')">إعادة التحدي 🔄</button>
-        </div>
-    </div>
+        <aside class="panel tutor-panel" aria-labelledby="tutorTitle">
+          <h3 id="tutorTitle">مساعدك الذكي <span aria-hidden="true">🤖</span></h3>
+          <div id="chatMessages" class="chat-messages" aria-live="polite">
+            <p class="message assistant">مرحبًا! اسألني أي سؤال قصير عن الإنجليزية.</p>
+          </div>
+          <form id="chatForm" class="chat-form">
+            <label class="sr-only" for="chatInput">سؤالك للمساعد</label>
+            <input id="chatInput" type="text" maxlength="500" placeholder="اكتب سؤالك هنا…" required>
+            <button id="chatButton" class="action-button secondary" type="submit">إرسال</button>
+          </form>
+        </aside>
+      </div>
+    </section>
 
-    <!-- ربطنا ملف الأوامر هنا -->
-    <script src="script.js"></script> 
+    <section id="dictionaryPage" class="page" aria-labelledby="dictionaryTitle">
+      <header class="page-header">
+        <button class="back-button" type="button" data-page="homePage">العودة للرئيسية <span aria-hidden="true">←</span></button>
+        <div>
+          <p class="eyebrow">كلماتك الحالية</p>
+          <h2 id="dictionaryTitle">📚 قائمة كلماتك المحفوظة</h2>
+        </div>
+      </header>
+      <div class="dictionary-toolbar">
+        <div class="stats-strip compact">
+          <span><strong id="learningCount">0</strong> قيد التعلم</span>
+          <span><strong id="masteredCount">0</strong> أتقنتها</span>
+        </div>
+        <button id="toggleMasteredButton" class="outline-button" type="button" aria-expanded="false">عرض الكلمات المتقنة</button>
+      </div>
+      <div id="dictionaryEmpty" class="empty-state" hidden>
+        <span aria-hidden="true">📖</span>
+        <h3>قاموسك بانتظار أول كلمة</h3>
+        <p>ترجم كلمة جديدة وستظهر هنا تلقائيًا.</p>
+        <button class="action-button primary" type="button" data-page="translationPage">ابدأ الترجمة</button>
+      </div>
+      <div id="dictionaryList" class="word-grid"></div>
+
+      <section id="masteredSection" class="mastered-section" hidden aria-labelledby="masteredTitle">
+        <h3 id="masteredTitle">الكلمات التي أتقنتها</h3>
+        <p>هذه الكلمات مخفية من القاموس واللعبة، لكنها تظل متاحة للجمل الجديدة.</p>
+        <div id="masteredList" class="word-grid subdued"></div>
+      </section>
+    </section>
+
+    <section id="gamePage" class="page game-page" aria-labelledby="gameTitle">
+      <header class="page-header">
+        <button class="back-button" type="button" data-page="homePage">العودة للرئيسية <span aria-hidden="true">←</span></button>
+        <div>
+          <p class="eyebrow">مراجعة سريعة</p>
+          <h2 id="gameTitle">🎮 تحدي الذاكرة مع الموسيقى</h2>
+        </div>
+      </header>
+
+      <div id="gameIntro" class="game-intro">
+        <div class="hero-icon" aria-hidden="true">🧠</div>
+        <h3>هل تتذكر المعنى خلال 5 ثوانٍ؟</h3>
+        <p>ستظهر كلمات القاموس فقط، مرة واحدة في كل جولة.</p>
+        <button id="startGameButton" class="menu-button warning" type="button">ابدأ التحدي</button>
+        <p id="gameIntroMessage" class="error-text" role="alert"></p>
+      </div>
+
+      <div id="gameBoard" class="game-board" hidden>
+        <div class="game-meta">
+          <span id="timerDisplay" class="timer" aria-live="assertive">⏱️ 5</span>
+          <span id="scoreDisplay">النتيجة: 0 / 0</span>
+        </div>
+        <div id="flashcard" class="flashcard" aria-live="polite">
+          <div class="flashcard-inner">
+            <article class="flashcard-face flashcard-front">
+              <p class="eyebrow light">تذكّر المعنى</p>
+              <h3 id="cardWord" dir="ltr"></h3>
+              <p id="cardSentence" class="card-sentence" dir="ltr"></p>
+            </article>
+            <article class="flashcard-face flashcard-back">
+              <p class="eyebrow light">المعنى</p>
+              <h3 id="cardTranslation"></h3>
+              <p id="cardSentenceAr"></p>
+            </article>
+          </div>
+        </div>
+        <div id="answerControls" class="answer-controls" hidden>
+          <button id="knownButton" class="answer-button correct" type="button">✓ عرفتها</button>
+          <button id="unknownButton" class="answer-button wrong" type="button">✕ لم أعرفها</button>
+        </div>
+      </div>
+
+      <div id="gameEnd" class="game-end" hidden>
+        <div class="hero-icon" aria-hidden="true">🏆</div>
+        <h3 id="finalScore"></h3>
+        <button id="restartGameButton" class="menu-button success" type="button">جولة جديدة</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="undoToast" class="toast" role="status" aria-live="polite" hidden>
+    <span>تم نقل الكلمة إلى المتقنة.</span>
+    <button id="undoButton" type="button">تراجع</button>
+  </div>
 </body>
 </html>
