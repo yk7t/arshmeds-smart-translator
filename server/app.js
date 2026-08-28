@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
 import { AUTH_COOKIE_NAME, SESSION_TTL_MS } from './auth.js';
 import { chatRequestSchema, loginRequestSchema, translateRequestSchema } from './validation.js';
+import { Vocabulary } from './db.js';
 
 const serverDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(serverDir, '..');
@@ -101,7 +102,7 @@ export function createApp({ aiClient, authService, allowedOrigins = [], trustPro
     try {
       const result = await authService.registerUser(input.email, input.password);
       if (!result.success) return res.status(400).json({ error: 'REGISTRATION_FAILED', message: result.error });
-      const token = authService.createSessionToken();
+      const token = authService.createSessionToken(input.email);
       res.cookie(AUTH_COOKIE_NAME, token, cookieOptions);
       const session = authService.readSession(`${AUTH_COOKIE_NAME}=${encodeURIComponent(token)}`);
       return res.json({ authenticated: true, csrfToken: session.csrfToken });
@@ -115,7 +116,7 @@ export function createApp({ aiClient, authService, allowedOrigins = [], trustPro
     try {
       const valid = await authService.verifyCredentials(input.email, input.password);
       if (!valid) return res.status(401).json({ error: 'INVALID_CREDENTIALS', message: 'البريد الإلكتروني أو كلمة المرور غير صحيحة.' });
-      const token = authService.createSessionToken();
+      const token = authService.createSessionToken(input.email);
       res.cookie(AUTH_COOKIE_NAME, token, cookieOptions);
       const session = authService.readSession(`${AUTH_COOKIE_NAME}=${encodeURIComponent(token)}`);
       return res.json({ authenticated: true, csrfToken: session.csrfToken });
@@ -128,6 +129,26 @@ export function createApp({ aiClient, authService, allowedOrigins = [], trustPro
   });
 
   app.use('/api', requireAuthentication, requireCsrf);
+
+  app.get('/api/sync', async (req, res, next) => {
+    try {
+      const vocab = await Vocabulary.findOne({ email: req.authSession.email });
+      res.json({ records: vocab ? vocab.records : [] });
+    } catch (error) { next(error); }
+  });
+
+  app.post('/api/sync', async (req, res, next) => {
+    try {
+      const { records } = req.body;
+      if (!Array.isArray(records)) return res.status(400).json({ error: 'INVALID_FORMAT' });
+      await Vocabulary.findOneAndUpdate(
+        { email: req.authSession.email },
+        { records },
+        { upsert: true, new: true }
+      );
+      res.json({ success: true });
+    } catch (error) { next(error); }
+  });
 
   app.post('/api/translate', aiLimiter, async (req, res, next) => {
     const input = parseBody(translateRequestSchema, req, res);
