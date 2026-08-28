@@ -18,14 +18,17 @@
     <div class="login-card">
       <div class="login-logo" aria-hidden="true">🌍</div>
       <h1 id="loginTitle">مترجم الكلمات الذكي</h1>
-      <p>سجّل الدخول للوصول إلى قاموسك وتدريباتك.</p>
-      <form id="loginForm" novalidate>
-        <label for="loginEmail">البريد الإلكتروني</label>
-        <input id="loginEmail" name="email" type="email" maxlength="254" autocomplete="username" placeholder="name@example.com" required>
-        <label for="loginPassword">كلمة المرور</label>
-        <input id="loginPassword" name="password" type="password" maxlength="200" autocomplete="current-password" placeholder="••••••••••••" required>
-        <button id="loginButton" class="action-button primary" type="submit">تسجيل الدخول</button>
+      <p id="authSubtitle">سجّل الدخول للوصول إلى قاموسك وتدريباتك.</p>
+      <form id="authForm" novalidate>
+        <label for="authEmail">البريد الإلكتروني</label>
+        <input id="authEmail" name="email" type="email" maxlength="254" autocomplete="username" placeholder="name@example.com" required>
+        <label for="authPassword">كلمة المرور</label>
+        <input id="authPassword" name="password" type="password" maxlength="200" autocomplete="current-password" placeholder="••••••••••••" required>
+        <button id="authButton" class="action-button primary" type="submit">تسجيل الدخول</button>
       </form>
+      <div class="auth-toggle-box">
+        <button id="toggleAuthModeBtn" class="toggle-auth-btn" type="button">ليس لديك حساب؟ أنشئ حساباً جديداً</button>
+      </div>
       <p id="loginStatus" class="login-status" role="alert" aria-live="polite"></p>
     </div>
   </section>
@@ -54,7 +57,6 @@
           <p>أدخل كلمتك بالعربية أو الإنجليزية ليضعها الذكاء الاصطناعي في جملة سياقية.</p>
         </div>
       </header>
-
       <div class="translation-layout">
         <article class="panel translation-panel">
           <form id="translationForm" novalidate>
@@ -82,7 +84,6 @@
             <p id="resultSentenceAr" class="arabic-sentence"></p>
           </section>
         </article>
-
         <aside class="panel tutor-panel" aria-labelledby="tutorTitle">
           <h3 id="tutorTitle">مساعدك الذكي <span aria-hidden="true">🤖</span></h3>
           <div id="chatMessages" class="chat-messages" aria-live="polite">
@@ -119,7 +120,6 @@
         <button class="action-button primary" type="button" data-page="translationPage">ابدأ الترجمة</button>
       </div>
       <div id="dictionaryList" class="word-grid"></div>
-
       <section id="masteredSection" class="mastered-section" hidden aria-labelledby="masteredTitle">
         <h3 id="masteredTitle">الكلمات التي أتقنتها</h3>
         <p>هذه الكلمات مخفية من القاموس واللعبة، لكنها تظل متاحة للجمل الجديدة.</p>
@@ -135,7 +135,6 @@
           <h2 id="gameTitle">🎮 تحدي الذاكرة مع الموسيقى</h2>
         </div>
       </header>
-
       <div id="gameIntro" class="game-intro">
         <div class="hero-icon" aria-hidden="true">🧠</div>
         <h3>هل تتذكر المعنى خلال 5 ثوانٍ؟</h3>
@@ -143,7 +142,6 @@
         <button id="startGameButton" class="menu-button warning" type="button">ابدأ التحدي</button>
         <p id="gameIntroMessage" class="error-text" role="alert"></p>
       </div>
-
       <div id="gameBoard" class="game-board" hidden>
         <div class="game-meta">
           <span id="timerDisplay" class="timer" aria-live="assertive">⏱️ 5</span>
@@ -168,7 +166,6 @@
           <button id="unknownButton" class="answer-button wrong" type="button">✕ لم أعرفها</button>
         </div>
       </div>
-
       <div id="gameEnd" class="game-end" hidden>
         <div class="hero-icon" aria-hidden="true">🏆</div>
         <h3 id="finalScore"></h3>
@@ -176,7 +173,6 @@
       </div>
     </section>
   </main>
-
   <div id="undoToast" class="toast" role="status" aria-live="polite" hidden>
     <span>تم نقل الكلمة إلى المتقنة.</span>
     <button id="undoButton" type="button">تراجع</button>
