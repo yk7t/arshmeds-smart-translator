@@ -10,5 +10,10 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String, required: true }
 });
-
 export const User = mongoose.models.User || mongoose.model('User', userSchema);
+
+const vocabSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+  records: { type: Array, default: [] }
+});
+export const Vocabulary = mongoose.models.Vocabulary || mongoose.model('Vocabulary', vocabSchema);
