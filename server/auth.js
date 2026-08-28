@@ -31,28 +31,30 @@ export function createAuthService({ sessionSecret, now = () => Date.now() }) {
     return crypto.createHmac('sha256', secret).update(value).digest('base64url');
   }
 
-  function createSessionToken() {
+  function createSessionToken(email) {
     if (!configured) throw new Error('Authentication is not configured');
-    const payload = Buffer.from(JSON.stringify({ version: 1, expiresAt: now() + SESSION_TTL_MS })).toString('base64url');
+    const payload = Buffer.from(JSON.stringify({ version: 1, email, expiresAt: now() + SESSION_TTL_MS })).toString('base64url');
     return `${payload}.${signature(payload)}`;
   }
 
   function validateToken(token) {
-    if (!configured || typeof token !== 'string') return false;
+    if (!configured || typeof token !== 'string') return null;
     const [payload, providedSignature, extra] = token.split('.');
-    if (!payload || !providedSignature || extra || !safeEqual(signature(payload), providedSignature)) return false;
+    if (!payload || !providedSignature || extra || !safeEqual(signature(payload), providedSignature)) return null;
     try {
       const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
-      return data.version === 1 && Number.isFinite(data.expiresAt) && data.expiresAt > now();
+      if (data.version === 1 && Number.isFinite(data.expiresAt) && data.expiresAt > now()) return data;
+      return null;
     } catch {
-      return false;
+      return null;
     }
   }
 
   function readSession(cookieHeader) {
     const token = readCookie(cookieHeader, AUTH_COOKIE_NAME);
-    if (!validateToken(token)) return null;
-    return { token, csrfToken: signature(`csrf:${token}`) };
+    const data = validateToken(token);
+    if (!data) return null;
+    return { token, email: data.email, csrfToken: signature(`csrf:${token}`) };
   }
 
   return {
