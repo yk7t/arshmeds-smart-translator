@@ -24,12 +24,12 @@
         <input id="authEmail" name="email" type="email" maxlength="254" autocomplete="username" placeholder="name@example.com" required>
         <label for="authPassword">كلمة المرور</label>
         <input id="authPassword" name="password" type="password" maxlength="200" autocomplete="current-password" placeholder="••••••••••••" required>
-        <button id="authButton" class="action-button primary" type="submit">تسجيل الدخول</button>
+        <button id="authButton" class="action-button primary" type="submit" style="margin-bottom: 10px;">تسجيل الدخول</button>
       </form>
       <div class="auth-toggle-box">
-        <button id="toggleAuthModeBtn" class="toggle-auth-btn" type="button">ليس لديك حساب؟ أنشئ حساباً جديداً</button>
+        <button id="toggleAuthModeBtn" type="button" style="width: 100%; padding: 12px; background-color: transparent; color: #dc3545; border: 2px solid #dc3545; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 5px;">ليس لديك حساب؟ أنشئ حساباً جديداً</button>
       </div>
-      <p id="loginStatus" class="login-status" role="alert" aria-live="polite"></p>
+      <p id="loginStatus" class="login-status" role="alert" aria-live="polite" style="margin-top: 15px;"></p>
     </div>
   </section>
 
@@ -173,6 +173,7 @@
       </div>
     </section>
   </main>
+
   <div id="undoToast" class="toast" role="status" aria-live="polite" hidden>
     <span>تم نقل الكلمة إلى المتقنة.</span>
     <button id="undoButton" type="button">تراجع</button>
