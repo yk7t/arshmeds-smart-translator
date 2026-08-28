@@ -66,36 +66,14 @@ export function createApp({ aiClient, authService, allowedOrigins = [], trustPro
     return next();
   });
 
-  const aiLimiter = rateLimit({
-    windowMs: 60_000,
-    limit: 20,
-    standardHeaders: 'draft-8',
-    legacyHeaders: false,
-    message: { error: 'RATE_LIMITED', message: 'طلبات كثيرة. انتظر قليلًا ثم حاول مجددًا.' }
-  });
+  const aiLimiter = rateLimit({ windowMs: 60_000, limit: 20, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: 'RATE_LIMITED', message: 'طلبات كثيرة. انتظر قليلًا.' } });
+  const loginLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 5, standardHeaders: 'draft-8', legacyHeaders: false, skipSuccessfulRequests: true, message: { error: 'RATE_LIMITED', message: 'محاولات كثيرة. انتظر 15 دقيقة.' } });
 
-  const loginLimiter = rateLimit({
-    windowMs: 15 * 60_000,
-    limit: 5,
-    standardHeaders: 'draft-8',
-    legacyHeaders: false,
-    skipSuccessfulRequests: true,
-    message: { error: 'RATE_LIMITED', message: 'محاولات دخول كثيرة. انتظر 15 دقيقة ثم حاول مجددًا.' }
-  });
-
-  const cookieOptions = {
-    httpOnly: true,
-    secure: production,
-    sameSite: 'strict',
-    path: '/',
-    maxAge: SESSION_TTL_MS
-  };
+  const cookieOptions = { httpOnly: true, secure: production, sameSite: 'strict', path: '/', maxAge: SESSION_TTL_MS };
 
   function requireAuthentication(req, res, next) {
     const session = authService.readSession(req.get('cookie'));
-    if (!session) {
-      return res.status(401).json({ error: 'AUTH_REQUIRED', message: 'يجب تسجيل الدخول أولًا.' });
-    }
+    if (!session) return res.status(401).json({ error: 'AUTH_REQUIRED', message: 'يجب تسجيل الدخول أولًا.' });
     req.authSession = session;
     return next();
   }
@@ -108,49 +86,44 @@ export function createApp({ aiClient, authService, allowedOrigins = [], trustPro
   }
 
   app.get('/health', (_req, res) => {
-    res.set('Cache-Control', 'no-store').json({
-      status: 'ok',
-      aiConfigured: Boolean(aiClient.configured),
-      authConfigured: Boolean(authService.configured)
-    });
+    res.set('Cache-Control', 'no-store').json({ status: 'ok', aiConfigured: Boolean(aiClient.configured), authConfigured: Boolean(authService.configured) });
   });
 
   app.get('/auth/status', (req, res) => {
     const session = authService.readSession(req.get('cookie'));
-    res.json({
-      configured: Boolean(authService.configured),
-      authenticated: Boolean(session),
-      csrfToken: session?.csrfToken || null
-    });
+    res.json({ configured: Boolean(authService.configured), authenticated: Boolean(session), csrfToken: session?.csrfToken || null });
   });
 
-  app.post('/auth/login', loginLimiter, async (req, res, next) => {
-    if (!authService.configured) {
-      return res.status(503).json({ error: 'AUTH_NOT_CONFIGURED', message: 'لم يتم إعداد بيانات الدخول على الخادم بعد.' });
-    }
+  app.post('/auth/register', loginLimiter, async (req, res, next) => {
+    if (!authService.configured) return res.status(503).json({ error: 'AUTH_NOT_CONFIGURED', message: 'لم يتم إعداد الخادم بعد.' });
     const input = parseBody(loginRequestSchema, req, res);
     if (!input) return;
     try {
-      const valid = await authService.verifyCredentials(input.email, input.password);
-      if (!valid) {
-        return res.status(401).json({ error: 'INVALID_CREDENTIALS', message: 'البريد الإلكتروني أو كلمة المرور غير صحيحة.' });
-      }
+      const result = await authService.registerUser(input.email, input.password);
+      if (!result.success) return res.status(400).json({ error: 'REGISTRATION_FAILED', message: result.error });
       const token = authService.createSessionToken();
       res.cookie(AUTH_COOKIE_NAME, token, cookieOptions);
       const session = authService.readSession(`${AUTH_COOKIE_NAME}=${encodeURIComponent(token)}`);
       return res.json({ authenticated: true, csrfToken: session.csrfToken });
-    } catch (error) {
-      return next(error);
-    }
+    } catch (error) { return next(error); }
+  });
+
+  app.post('/auth/login', loginLimiter, async (req, res, next) => {
+    if (!authService.configured) return res.status(503).json({ error: 'AUTH_NOT_CONFIGURED', message: 'لم يتم إعداد الخادم بعد.' });
+    const input = parseBody(loginRequestSchema, req, res);
+    if (!input) return;
+    try {
+      const valid = await authService.verifyCredentials(input.email, input.password);
+      if (!valid) return res.status(401).json({ error: 'INVALID_CREDENTIALS', message: 'البريد الإلكتروني أو كلمة المرور غير صحيحة.' });
+      const token = authService.createSessionToken();
+      res.cookie(AUTH_COOKIE_NAME, token, cookieOptions);
+      const session = authService.readSession(`${AUTH_COOKIE_NAME}=${encodeURIComponent(token)}`);
+      return res.json({ authenticated: true, csrfToken: session.csrfToken });
+    } catch (error) { return next(error); }
   });
 
   app.post('/auth/logout', requireAuthentication, requireCsrf, (req, res) => {
-    res.clearCookie(AUTH_COOKIE_NAME, {
-      httpOnly: true,
-      secure: production,
-      sameSite: 'strict',
-      path: '/'
-    });
+    res.clearCookie(AUTH_COOKIE_NAME, { httpOnly: true, secure: production, sameSite: 'strict', path: '/' });
     res.json({ authenticated: false });
   });
 
@@ -159,39 +132,23 @@ export function createApp({ aiClient, authService, allowedOrigins = [], trustPro
   app.post('/api/translate', aiLimiter, async (req, res, next) => {
     const input = parseBody(translateRequestSchema, req, res);
     if (!input) return;
-    try {
-      const result = await aiClient.translate(input);
-      res.json(result);
-    } catch (error) {
-      next(error);
-    }
+    try { res.json(await aiClient.translate(input)); } catch (error) { next(error); }
   });
 
   app.post('/api/chat', aiLimiter, async (req, res, next) => {
     const input = parseBody(chatRequestSchema, req, res);
     if (!input) return;
-    try {
-      const result = await aiClient.chat(input);
-      res.json(result);
-    } catch (error) {
-      next(error);
-    }
+    try { res.json(await aiClient.chat(input)); } catch (error) { next(error); }
   });
 
   app.get('/music.mp3', (_req, res) => res.sendFile(path.join(projectRoot, 'music.mp3')));
   app.use(express.static(publicDir, { index: 'index.html', maxAge: 0, etag: true }));
-
-  app.use(['/api', '/auth'], (_req, res) => {
-    res.status(404).json({ error: 'NOT_FOUND', message: 'المسار المطلوب غير موجود.' });
-  });
+  app.use(['/api', '/auth'], (_req, res) => { res.status(404).json({ error: 'NOT_FOUND', message: 'المسار المطلوب غير موجود.' }); });
 
   app.use((error, _req, res, _next) => {
     const providerUnavailable = !aiClient.configured || error?.name === 'AbortError';
     console.error(JSON.stringify({ level: 'error', event: 'api_request_failed', type: error?.name || 'Error' }));
-    res.status(providerUnavailable ? 503 : 502).json({
-      error: 'AI_UNAVAILABLE',
-      message: 'تعذر الاتصال بخدمة الترجمة حاليًا. حاول مرة أخرى لاحقًا.'
-    });
+    res.status(providerUnavailable ? 503 : 502).json({ error: 'AI_UNAVAILABLE', message: 'تعذر الاتصال بالخدمة حاليًا.' });
   });
 
   return app;
