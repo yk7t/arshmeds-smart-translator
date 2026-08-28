@@ -44,27 +44,32 @@ function createRecord(data, { now, uuid }) {
 export function createVocabularyStore(storage = window.localStorage, options = {}) {
   const now = options.now || (() => new Date().toISOString());
   const uuid = options.uuid || (() => globalThis.crypto?.randomUUID?.() || `word-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+  let apiToken = null;
 
   function write(records) {
     storage.setItem(STORAGE_KEY, JSON.stringify(records));
+    if (apiToken) {
+      fetch('/api/sync', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-csrf-token': apiToken },
+        body: JSON.stringify({ records })
+      }).catch(() => {});
+    }
   }
 
   function migrate() {
     const current = safeParse(storage.getItem(STORAGE_KEY), null);
     if (Array.isArray(current)) {
       const normalized = current.map((item) => createRecord(item, { now, uuid })).filter((item) => item.normalizedWord);
-      write(deduplicate(normalized));
-      return deduplicate(normalized);
+      const cleanRecords = deduplicate(normalized);
+      storage.setItem(STORAGE_KEY, JSON.stringify(cleanRecords));
+      return cleanRecords;
     }
 
     const rawVocabulary = storage.getItem(LEGACY_VOCABULARY_KEY);
     const rawWords = storage.getItem(LEGACY_WORDS_KEY);
     if ((rawVocabulary !== null || rawWords !== null) && storage.getItem(BACKUP_KEY) === null) {
-      storage.setItem(BACKUP_KEY, JSON.stringify({
-        createdAt: now(),
-        savedVocabulary: rawVocabulary,
-        savedEnglishWords: rawWords
-      }));
+      storage.setItem(BACKUP_KEY, JSON.stringify({ createdAt: now(), savedVocabulary: rawVocabulary, savedEnglishWords: rawWords }));
     }
 
     const legacyVocabulary = safeParse(rawVocabulary, []);
@@ -120,16 +125,7 @@ export function createVocabularyStore(storage = window.localStorage, options = {
     const index = records.findIndex((item) => item.normalizedWord === normalized);
     const timestamp = now();
     if (index >= 0) {
-      records[index] = {
-        ...records[index],
-        word: stripMarkup(data.word),
-        translation: stripMarkup(data.translation),
-        sentence: stripMarkup(data.sentence),
-        sentenceAr: stripMarkup(data.sentenceAr),
-        reviewCount: records[index].reviewCount + 1,
-        updatedAt: timestamp,
-        lastUsedAt: timestamp
-      };
+      records[index] = { ...records[index], word: stripMarkup(data.word), translation: stripMarkup(data.translation), sentence: stripMarkup(data.sentence), sentenceAr: stripMarkup(data.sentenceAr), reviewCount: records[index].reviewCount + 1, updatedAt: timestamp, lastUsedAt: timestamp };
       write(records);
       return records[index];
     }
@@ -153,13 +149,7 @@ export function createVocabularyStore(storage = window.localStorage, options = {
     const records = getAll();
     const index = records.findIndex((item) => item.id === id);
     if (index < 0) return null;
-    records[index] = {
-      ...records[index],
-      correctCount: records[index].correctCount + (isCorrect ? 1 : 0),
-      wrongCount: records[index].wrongCount + (isCorrect ? 0 : 1),
-      lastReviewedAt: now(),
-      updatedAt: now()
-    };
+    records[index] = { ...records[index], correctCount: records[index].correctCount + (isCorrect ? 1 : 0), wrongCount: records[index].wrongCount + (isCorrect ? 0 : 1), lastReviewedAt: now(), updatedAt: now() };
     write(records);
     return records[index];
   }
@@ -169,13 +159,26 @@ export function createVocabularyStore(storage = window.localStorage, options = {
     getAll,
     getLearning: () => getAll().filter((item) => item.status === 'learning'),
     getMastered: () => getAll().filter((item) => item.status === 'mastered'),
-    getContextWords: (limit = 20) => getAll()
-      .sort((a, b) => String(b.lastUsedAt).localeCompare(String(a.lastUsedAt)))
-      .slice(0, limit)
-      .map((item) => item.word),
+    getContextWords: (limit = 20) => getAll().sort((a, b) => String(b.lastUsedAt).localeCompare(String(a.lastUsedAt))).slice(0, limit).map((item) => item.word),
     saveTranslation,
     markMastered: (id) => setStatus(id, 'mastered'),
     restoreLearning: (id) => setStatus(id, 'learning'),
-    recordReview
+    recordReview,
+    setToken: (token) => { apiToken = token; },
+    syncDown: async () => {
+      if (!apiToken) return;
+      try {
+        const res = await fetch('/api/sync', { headers: { 'accept': 'application/json', 'x-csrf-token': apiToken }});
+        if (res.ok) {
+          const data = await res.json();
+          if (data.records && data.records.length > 0) {
+            storage.setItem(STORAGE_KEY, JSON.stringify(data.records));
+          } else if (data.records.length === 0) {
+             const localRecords = getAll();
+             if (localRecords.length > 0) write(localRecords);
+          }
+        }
+      } catch (e) {}
+    }
   };
 }
