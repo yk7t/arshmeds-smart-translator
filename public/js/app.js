@@ -50,13 +50,19 @@ function showLogin(message = '') {
   elements.authEmail.focus();
 }
 
-function showAuthenticatedApp(token) {
+async function showAuthenticatedApp(token) {
   csrfToken = token;
-  elements.authLoading.hidden = true;
+  store.setToken(token);
   elements.loginPage.hidden = true;
-  elements.appShell.hidden = false;
+  elements.authLoading.hidden = false;
   elements.loginStatus.textContent = '';
+  
+  await store.syncDown();
+  
+  elements.authLoading.hidden = true;
+  elements.appShell.hidden = false;
   updateStats();
+  renderDictionary();
 }
 
 elements.toggleAuthModeBtn.addEventListener('click', () => {
