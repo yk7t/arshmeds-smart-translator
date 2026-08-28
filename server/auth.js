@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
+import { User } from './db.js';
 
 export const AUTH_COOKIE_NAME = 'translator_session';
 export const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
@@ -22,15 +23,9 @@ function readCookie(cookieHeader, name) {
   return null;
 }
 
-export function createAuthService({ email, passwordHash, sessionSecret, now = () => Date.now() }) {
-  const normalizedEmail = String(email || '').trim().toLocaleLowerCase('en-US');
+export function createAuthService({ sessionSecret, now = () => Date.now() }) {
   const secret = String(sessionSecret || '');
-  const hash = String(passwordHash || '');
-  const configured = Boolean(
-    normalizedEmail &&
-    /^\$2[aby]\$\d{2}\$/.test(hash) &&
-    secret.length >= 32
-  );
+  const configured = secret.length >= 32;
 
   function signature(value) {
     return crypto.createHmac('sha256', secret).update(value).digest('base64url');
@@ -62,14 +57,22 @@ export function createAuthService({ email, passwordHash, sessionSecret, now = ()
 
   return {
     configured,
+    async registerUser(email, password) {
+      if (!configured) return { success: false, error: 'لم يتم إعداد مفتاح الأمان للحسابات.' };
+      const normalizedEmail = String(email || '').trim().toLocaleLowerCase('en-US');
+      const existingUser = await User.findOne({ email: normalizedEmail });
+      if (existingUser) return { success: false, error: 'البريد الإلكتروني مسجل مسبقاً.' };
+
+      const hashedPassword = await bcrypt.hash(String(password || ''), 10);
+      await User.create({ email: normalizedEmail, password: hashedPassword });
+      return { success: true };
+    },
     async verifyCredentials(candidateEmail, password) {
       if (!configured) return false;
-      const emailMatches = safeEqual(
-        String(candidateEmail || '').trim().toLocaleLowerCase('en-US'),
-        normalizedEmail
-      );
-      const passwordMatches = await bcrypt.compare(String(password || ''), hash);
-      return emailMatches && passwordMatches;
+      const normalizedEmail = String(candidateEmail || '').trim().toLocaleLowerCase('en-US');
+      const user = await User.findOne({ email: normalizedEmail });
+      if (!user) return false;
+      return await bcrypt.compare(String(password || ''), user.password);
     },
     createSessionToken,
     readSession,
