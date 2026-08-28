@@ -5,7 +5,7 @@ const store = createVocabularyStore();
 store.migrate();
 
 const elements = Object.fromEntries([
-  'authLoading', 'loginPage', 'loginForm', 'loginEmail', 'loginPassword', 'loginButton', 'loginStatus',
+  'authLoading', 'loginPage', 'authForm', 'authEmail', 'authPassword', 'authButton', 'loginStatus', 'authSubtitle', 'toggleAuthModeBtn',
   'appShell', 'logoutButton',
   'themeToggle', 'homeLearningCount', 'homeMasteredCount', 'translationForm', 'wordInput',
   'translateButton', 'translationStatus', 'translationResult', 'resultWord', 'resultTranslation',
@@ -27,6 +27,7 @@ let gameIndex = 0;
 let score = 0;
 let cancelCountdown = null;
 let answerCurrentCard = null;
+let isRegisterMode = false;
 
 function setTheme(theme) {
   const dark = theme === 'dark';
@@ -45,8 +46,8 @@ function showLogin(message = '') {
   elements.appShell.hidden = true;
   elements.loginPage.hidden = false;
   elements.loginStatus.textContent = message;
-  elements.loginPassword.value = '';
-  elements.loginEmail.focus();
+  elements.authPassword.value = '';
+  elements.authEmail.focus();
 }
 
 function showAuthenticatedApp(token) {
@@ -58,12 +59,20 @@ function showAuthenticatedApp(token) {
   updateStats();
 }
 
+elements.toggleAuthModeBtn.addEventListener('click', () => {
+  isRegisterMode = !isRegisterMode;
+  elements.authButton.textContent = isRegisterMode ? 'إنشاء حساب جديد' : 'تسجيل الدخول';
+  elements.authSubtitle.textContent = isRegisterMode ? 'أدخل بريداً وكلمة مرور لإنشاء حسابك الخاص.' : 'سجّل الدخول للوصول إلى قاموسك وتدريباتك.';
+  elements.toggleAuthModeBtn.textContent = isRegisterMode ? 'لديك حساب بالفعل؟ سجل الدخول' : 'ليس لديك حساب؟ أنشئ حساباً جديداً';
+  elements.loginStatus.textContent = '';
+});
+
 async function checkAuthentication() {
   try {
     const response = await fetch('/auth/status', { headers: { accept: 'application/json' } });
     const data = await response.json();
     if (!data.configured) {
-      showLogin('بيانات الدخول غير مجهزة. شغّل npm run setup-auth داخل المشروع.');
+      showLogin('بيانات الدخول غير مجهزة في الخادم.');
       return;
     }
     if (data.authenticated && data.csrfToken) {
@@ -76,30 +85,33 @@ async function checkAuthentication() {
   }
 }
 
-elements.loginForm.addEventListener('submit', async (event) => {
+elements.authForm.addEventListener('submit', async (event) => {
   event.preventDefault();
-  if (elements.loginButton.disabled) return;
-  const email = elements.loginEmail.value.trim();
-  const password = elements.loginPassword.value;
+  if (elements.authButton.disabled) return;
+  const email = elements.authEmail.value.trim();
+  const password = elements.authPassword.value;
   if (!email || !password) {
     elements.loginStatus.textContent = 'أدخل البريد الإلكتروني وكلمة المرور.';
     return;
   }
-  elements.loginButton.disabled = true;
-  elements.loginStatus.textContent = 'جاري التحقق…';
+  elements.authButton.disabled = true;
+  elements.loginStatus.textContent = 'جاري المعالجة…';
+  
+  const endpoint = isRegisterMode ? '/auth/register' : '/auth/login';
+  
   try {
-    const response = await fetch('/auth/login', {
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.message || 'تعذر تسجيل الدخول.');
+    if (!response.ok) throw new Error(data.message || (isRegisterMode ? 'فشل إنشاء الحساب.' : 'تعذر تسجيل الدخول.'));
     showAuthenticatedApp(data.csrfToken);
   } catch (error) {
     elements.loginStatus.textContent = error.message;
   } finally {
-    elements.loginButton.disabled = false;
+    elements.authButton.disabled = false;
   }
 });
 
