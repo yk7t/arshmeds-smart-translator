@@ -72,7 +72,7 @@ export function createDeepSeekClient({ apiKey, model, timeoutMs = DEFAULT_TIMEOU
     async translate({ word, contextWords }) {
       const userData = JSON.stringify({ word, contextWords: contextWords.slice(0, 20) });
       
-      const systemPrompt = `You are a safe English-Arabic vocabulary tutor. 
+const systemPrompt = `You are a safe English-Arabic vocabulary tutor. 
 If the user inputs an Arabic word, translate it to English. If English, translate to Arabic.
 You MUST output ONLY a valid JSON object matching this structure exactly:
 {
@@ -81,8 +81,7 @@ You MUST output ONLY a valid JSON object matching this structure exactly:
   "sentence": "A short natural A2 English sentence using the word",
   "sentenceAr": "Arabic translation of the sentence"
 }
-Use at most two context words only when natural. Never force awkward wording. Do not include markdown tags.`;
-
+CRITICAL INSTRUCTION: You are provided with a 'New Word' and a list of 'Context Words'. You MUST unconditionally include at least 1, 2, or 3 words from the 'Context Words' list inside the new English sentence you generate. It is STRICTLY FORBIDDEN to generate a sentence without including previous context words if they are provided. Do not include markdown tags.`;
       const userPrompt = `Translate this JSON data: ${userData}`;
 
       return generate(systemPrompt, userPrompt, translationResponseSchema, 0.2);
