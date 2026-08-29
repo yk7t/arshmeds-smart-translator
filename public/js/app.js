@@ -184,8 +184,8 @@ function createWordCard(record, mastered = false) {
   const title = document.createElement('h3');
   title.dir = 'ltr';
   title.textContent = record.word;
-  const speak = makeButton('🔊', 'icon-button', () => speak(record.word), `نطق كلمة ${record.word}`);
-  header.append(title, speak);
+const speakBtn = makeButton('🔊', 'icon-button', () => speak(record.word), `نطق كلمة ${record.word}`);
+  header.append(title, speakBtn);
 
   const meaning = document.createElement('p');
   meaning.className = 'meaning';
