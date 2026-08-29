@@ -69,22 +69,28 @@ export function createDeepSeekClient({ apiKey, model, timeoutMs = DEFAULT_TIMEOU
 
   return {
     configured: true,
-    async translate({ word, contextWords }) {
+async translate({ word, contextWords }) {
       const userData = JSON.stringify({ word, contextWords: contextWords.slice(0, 20) });
       
-const systemPrompt = `You are a safe English-Arabic vocabulary tutor. 
-If the user inputs an Arabic word, translate it to English. If English, translate to Arabic.
+      const systemPrompt = `You are a smart English-Arabic tutor for A1/A2 learners.
+CRITICAL RULES:
+1. AUTOCORRECT: If the user's input has a typo, fix it automatically to the closest real word.
+2. TRANSLATE: Translate Arabic to English, or English to Arabic.
+3. SENTENCE CREATION: You MUST write a NEW, creative, and simple A1/A2 English sentence.
+4. INCLUSION RULE: The sentence MUST clearly include the corrected English word AND at least 1 or 2 words from the 'Context Words' list.
+
 You MUST output ONLY a valid JSON object matching this structure exactly:
 {
-  "word": "The English word only",
-  "translation": "The Arabic translation only",
-  "sentence": "A short natural A2 English sentence using the word",
+  "word": "The corrected English word",
+  "translation": "The correct Arabic translation",
+  "sentence": "A simple English sentence containing the target word + context words",
   "sentenceAr": "Arabic translation of the sentence"
 }
-CRITICAL INSTRUCTION: You are provided with a 'New Word' and a list of 'Context Words'. You MUST unconditionally include at least 1, 2, or 3 words from the 'Context Words' list inside the new English sentence you generate. It is STRICTLY FORBIDDEN to generate a sentence without including previous context words if they are provided. Do not include markdown tags.`;
+Do not include markdown tags.`;
+
       const userPrompt = `Translate this JSON data: ${userData}`;
 
-      return generate(systemPrompt, userPrompt, translationResponseSchema, 0.2);
+      return generate(systemPrompt, userPrompt, translationResponseSchema, 0.7);
     },
     
     async chat({ message }) {
